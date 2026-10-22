@@ -38,3 +38,5 @@ class AuthResponse(BaseModel):
     """Estructura estándar de las respuestas de autenticación."""
 
     mensaje: str
+    access_token: str | None = None
+    token_type: str | None = None

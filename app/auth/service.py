@@ -5,16 +5,16 @@ from psycopg.errors import UniqueViolation
 from app.database.connection import get_db_connection
 
 
-# Configura el algoritmo de hash seguro para las contraseñas.
+# Configura el algoritmo recomendado para proteger contraseñas.
 password_hash = PasswordHash.recommended()
 
 
 def registrar_usuario(usuario: str, password: str) -> bool:
     """Registra un usuario y almacena el hash de su contraseña."""
-
+    
     # Genera un hash; la contraseña original no se guarda en la base de datos.
     hash_generado = password_hash.hash(password)
-
+    
     connection = get_db_connection()
 
     try:
@@ -42,17 +42,20 @@ def registrar_usuario(usuario: str, password: str) -> bool:
         connection.close()
 
 
-def autenticar_usuario(usuario: str, password: str) -> bool:
-    """Comprueba si las credenciales corresponden a un usuario registrado."""
+def autenticar_usuario(usuario: str, password: str) -> int | None:
+    """
+    Verifica las credenciales y devuelve el ID del usuario
+    si la autenticación es correcta.
+    """
 
     connection = get_db_connection()
 
     try:
         with connection.cursor() as cursor:
-            # Busca el hash asociado al nombre de usuario.
+            # Ejecuta la consulta para obtener el ID y el hash de la contraseña del usuario.
             cursor.execute(
                 """
-                SELECT password_hash
+                SELECT id, password_hash
                 FROM usuarios
                 WHERE usuario = %s
                 """,
@@ -61,15 +64,18 @@ def autenticar_usuario(usuario: str, password: str) -> bool:
 
             resultado = cursor.fetchone()
 
-        # Si el usuario no existe, la autenticación falla.
+        # El usuario no existe.
         if resultado is None:
-            return False
+            return None
 
-        hash_guardado = resultado[0]
+        usuario_id, hash_guardado = resultado
 
-        # Compara la contraseña recibida con el hash almacenado.
-        return password_hash.verify(password, hash_guardado)
+        # La contraseña no coincide.
+        if not password_hash.verify(password, hash_guardado):
+            return None
+
+        # Las credenciales son correctas.
+        return usuario_id
 
     finally:
-        # Libera la conexión con PostgreSQL.
         connection.close()
