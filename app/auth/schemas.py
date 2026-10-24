@@ -1,14 +1,24 @@
 
-from pydantic import BaseModel, Field
+from datetime import date
+
+from pydantic import BaseModel, EmailStr, Field
 
 
 class RegistroRequest(BaseModel):
-    """Define y valida los datos necesarios para registrar un usuario."""
+    """Datos necesarios para registrar un usuario en FINGO."""
 
-    usuario: str = Field(
-        min_length=3,
-        max_length=50,
-        description="Nombre de usuario para acceder a FINGO"
+    nombre: str = Field(
+        min_length=2,
+        max_length=100,
+        description="Nombre del usuario"
+    )
+
+    correo: EmailStr = Field(
+        description="Correo electrónico del usuario"
+    )
+
+    fecha_nacimiento: date = Field(
+        description="Fecha de nacimiento del usuario"
     )
 
     password: str = Field(
@@ -19,12 +29,10 @@ class RegistroRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """Define las credenciales necesarias para iniciar sesión."""
+    """Credenciales necesarias para iniciar sesión."""
 
-    usuario: str = Field(
-        min_length=3,
-        max_length=50,
-        description="Nombre de usuario registrado"
+    correo: EmailStr = Field(
+        description="Correo electrónico registrado"
     )
 
     password: str = Field(

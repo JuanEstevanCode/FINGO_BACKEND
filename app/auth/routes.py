@@ -23,13 +23,17 @@ def registro(datos: RegistroRequest):
     """Registra un nuevo usuario en FINGO."""
 
     try:
-        # Intenta registrar el usuario y su contraseña protegida.
-        registrado = registrar_usuario(datos.usuario, datos.password)
+        registrado = registrar_usuario(
+            nombre=datos.nombre,
+            correo=datos.correo,
+            fecha_nacimiento=datos.fecha_nacimiento,
+            password=datos.password,
+        )
 
         if not registrado:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="El nombre de usuario ya está registrado.",
+                detail="El correo electrónico ya está registrado.",
             )
 
         return AuthResponse(
@@ -55,14 +59,14 @@ def login(datos: LoginRequest):
 
     try:
         usuario_id = autenticar_usuario(
-            datos.usuario,
+            datos.correo,
             datos.password,
         )
 
         if usuario_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Error en la autenticación.",
+                detail="Correo electrónico o contraseña incorrectos.",
             )
 
         access_token = crear_access_token(usuario_id)
@@ -77,7 +81,6 @@ def login(datos: LoginRequest):
         raise
 
     except PsycopgError:
-        # Devuelve un error controlado si falla PostgreSQL.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="No fue posible procesar la autenticación.",

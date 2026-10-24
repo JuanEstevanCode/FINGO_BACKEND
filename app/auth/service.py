@@ -1,4 +1,6 @@
 
+from datetime import date
+
 from pwdlib import PasswordHash
 from psycopg.errors import UniqueViolation
 
@@ -9,40 +11,46 @@ from app.database.connection import get_db_connection
 password_hash = PasswordHash.recommended()
 
 
-def registrar_usuario(usuario: str, password: str) -> bool:
+def registrar_usuario(
+    nombre: str,
+    correo: str,
+    fecha_nacimiento: date,
+    password: str
+) -> bool:
     """Registra un usuario y almacena el hash de su contraseña."""
-    
-    # Genera un hash; la contraseña original no se guarda en la base de datos.
+
+    # Genera el hash; nunca guarda la contraseña original.
     hash_generado = password_hash.hash(password)
-    
+
     connection = get_db_connection()
 
     try:
         with connection.cursor() as cursor:
-            # Inserta el usuario y su hash en la tabla de usuarios.
             cursor.execute(
                 """
-                INSERT INTO usuarios (usuario, password_hash)
-                VALUES (%s, %s)
+                INSERT INTO usuarios (
+                    nombre,
+                    correo,
+                    fecha_nacimiento,
+                    password_hash
+                )
+                VALUES (%s, LOWER(%s), %s, %s)
                 """,
-                (usuario, hash_generado)
+                (nombre, correo, fecha_nacimiento, hash_generado)
             )
 
-        # Confirma la transacción para guardar el registro.
         connection.commit()
         return True
 
     except UniqueViolation:
-        # Revierte la transacción si el nombre de usuario ya existe.
         connection.rollback()
         return False
 
     finally:
-        # Cierra la conexión incluso si ocurre un error.
         connection.close()
 
 
-def autenticar_usuario(usuario: str, password: str) -> int | None:
+def autenticar_usuario(correo: str, password: str) -> int | None:
     """
     Verifica las credenciales y devuelve el ID del usuario
     si la autenticación es correcta.
@@ -52,19 +60,18 @@ def autenticar_usuario(usuario: str, password: str) -> int | None:
 
     try:
         with connection.cursor() as cursor:
-            # Ejecuta la consulta para obtener el ID y el hash de la contraseña del usuario.
             cursor.execute(
                 """
                 SELECT id, password_hash
                 FROM usuarios
-                WHERE usuario = %s
+                WHERE LOWER(correo) = LOWER(%s)
                 """,
-                (usuario,)
+                (correo,)
             )
 
             resultado = cursor.fetchone()
 
-        # El usuario no existe.
+        # El correo no existe.
         if resultado is None:
             return None
 
