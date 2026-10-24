@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from app.movements.routes import router as movements_router
 from app.auth.routes import router as auth_router
 from app.categories.routes import router as categories_router
+from app.budgets.routes import router as budgets_router
 
 # Carga las variables de entorno del proyecto.
 load_dotenv()
@@ -20,6 +21,9 @@ app.include_router(auth_router)
 
 # Registra las rutas de categorías.
 app.include_router(categories_router)
+
+# Registra las rutas de presupuestos.
+app.include_router(budgets_router)
 
 
 @app.get("/")
